@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,7 +8,7 @@ import '../../../app/theme/app_theme.dart';
 import '../../../core/formatters/app_formatters.dart';
 import '../../../core/providers/app_providers.dart';
 import '../../../core/widgets/app_section_card.dart';
-import '../../../core/widgets/variant_picker_sheet.dart';
+import '../../inventory/models/inventory_models.dart';
 import '../models/transaction_models.dart';
 import 'transaction_controllers.dart';
 
@@ -41,20 +43,33 @@ class _CheckoutTab extends ConsumerStatefulWidget {
 }
 
 class _CheckoutTabState extends ConsumerState<_CheckoutTab> {
-  late final TextEditingController _paidAmountController;
-  late final TextEditingController _noteController;
+  static const double _cartBarHeight = 64;
+
+  late final TextEditingController _queryController;
+  Timer? _debounce;
+  bool _isBootstrapping = true;
+  bool _isSearching = false;
+  String? _searchError;
+  String _lastQuery = '';
+  List<SearchVariantResult> _catalogVariants = const [];
+  List<SearchVariantResult> _visibleVariants = const [];
 
   @override
   void initState() {
     super.initState();
-    _paidAmountController = TextEditingController();
-    _noteController = TextEditingController();
+    _queryController = TextEditingController();
+    _queryController.addListener(() {
+      if (mounted) {
+        setState(() {});
+      }
+    });
+    unawaited(_loadCatalogVariants());
   }
 
   @override
   void dispose() {
-    _paidAmountController.dispose();
-    _noteController.dispose();
+    _debounce?.cancel();
+    _queryController.dispose();
     super.dispose();
   }
 
@@ -72,100 +87,339 @@ class _CheckoutTabState extends ConsumerState<_CheckoutTab> {
       }
     });
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isWide = constraints.maxWidth >= 980;
-        final hero = _CheckoutHeroCard(
-          itemCount: draft.items.length,
-          totalAmount: draft.totalAmount,
-          paidAmount: draft.paidAmount,
-          changeAmount: draft.changeAmount,
-          hasItems: draft.items.isNotEmpty,
-          onAddItem: () => _pickVariant(controller),
-          onSetExactAmount: () {
-            _paidAmountController.text = '${draft.totalAmount}';
-            controller.setPaidAmountValue(draft.totalAmount);
-          },
-          onClearDraft: () {
-            _paidAmountController.clear();
-            _noteController.clear();
-            controller.clearDraft();
-          },
-        );
-
-        final cartPanel = _CartPanel(
-          items: draft.items,
-          onAddItem: () => _pickVariant(controller),
-        );
-
-        final paymentPanel = _PaymentPanel(
-          draft: draft,
-          paidAmountController: _paidAmountController,
-          noteController: _noteController,
-          onPaidChanged: controller.updatePaidAmount,
-          onNoteChanged: controller.updateNote,
-          onSetExactAmount: () {
-            _paidAmountController.text = '${draft.totalAmount}';
-            controller.setPaidAmountValue(draft.totalAmount);
-          },
-          onSubmit: () async {
-            final receipt = await controller.submit();
-            if (receipt != null) {
-              if (!context.mounted) {
-                return;
-              }
-              _paidAmountController.clear();
-              _noteController.clear();
-              await Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => TransactionReceiptScreen(detail: receipt),
-                ),
-              );
-            }
-          },
-        );
-
-        if (!isWide) {
-          return ListView(
-            children: [
-              hero,
-              const SizedBox(height: 16),
-              cartPanel,
-              const SizedBox(height: 16),
-              paymentPanel,
-            ],
-          );
-        }
-
-        return SingleChildScrollView(
-          child: Column(
-            children: [
-              hero,
-              const SizedBox(height: 16),
-              Row(
+    return Stack(
+      children: [
+        Column(
+          children: [
+            AppSectionCard(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(flex: 7, child: cartPanel),
-                  const SizedBox(width: 16),
-                  Expanded(flex: 5, child: paymentPanel),
+                  Text(
+                    'Daftar Produk POS',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _queryController,
+                    decoration: InputDecoration(
+                      hintText: 'Cari produk, part, model, atau kategori...',
+                      prefixIcon: const Icon(Icons.search_rounded),
+                      suffixIcon: _queryController.text.isEmpty
+                          ? null
+                          : IconButton(
+                              onPressed: () {
+                                _queryController.clear();
+                                _applyLocalSearch('');
+                              },
+                              icon: const Icon(Icons.close_rounded),
+                            ),
+                    ),
+                    onChanged: _onQueryChanged,
+                  ),
                 ],
               ),
-            ],
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: _buildProductsSection(
+                context: context,
+                controller: controller,
+                hasCartBar: draft.items.isNotEmpty,
+              ),
+            ),
+          ],
+        ),
+        if (draft.items.isNotEmpty)
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: _CheckoutCartBottomBar(
+              itemCount: draft.items.length,
+              total: draft.totalAmount,
+              onTap: _openCheckoutSheet,
+            ),
           ),
-        );
-      },
+      ],
     );
   }
 
-  Future<void> _pickVariant(TransactionDraftController controller) async {
-    final selected = await showVariantPickerSheet(
-      context,
-      inStockOnly: true,
-      title: 'Cari varian untuk checkout',
-    );
-    if (selected != null) {
-      controller.addVariant(selected);
+  Widget _buildProductsSection({
+    required BuildContext context,
+    required TransactionDraftController controller,
+    required bool hasCartBar,
+  }) {
+    if (_isBootstrapping) {
+      return const Center(child: CircularProgressIndicator());
     }
+
+    if (_searchError != null && _visibleVariants.isEmpty) {
+      return AppSectionCard(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.wifi_tethering_error_rounded,
+              size: 34,
+              color: AppTheme.warmAccent,
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'Produk gagal dimuat',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 6),
+            Text(_searchError!, textAlign: TextAlign.center),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: _retrySearch,
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Coba lagi'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_visibleVariants.isEmpty) {
+      return const AppSectionCard(
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 24),
+          child: Center(child: Text('Produk tidak ditemukan.')),
+        ),
+      );
+    }
+
+    return Stack(
+      children: [
+        ListView.separated(
+          padding: EdgeInsets.only(
+            bottom: hasCartBar ? _cartBarHeight + 28 : 8,
+          ),
+          itemCount: _visibleVariants.length,
+          separatorBuilder: (_, _) => const SizedBox(height: 12),
+          itemBuilder: (context, index) {
+            final item = _visibleVariants[index];
+            return _PosVariantCard(
+              item: item,
+              onAdd: () {
+                controller.addVariant(item);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('${item.grade} ditambahkan')),
+                );
+              },
+            );
+          },
+        ),
+        if (_isSearching)
+          const Positioned(
+            top: 10,
+            right: 10,
+            child: SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Future<void> _openCheckoutSheet() async {
+    final receipt = await showModalBottomSheet<TransactionDetail>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (_) => const _CheckoutCartSheet(),
+    );
+
+    if (receipt == null || !mounted) {
+      return;
+    }
+
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => TransactionReceiptScreen(detail: receipt),
+      ),
+    );
+  }
+
+  void _onQueryChanged(String value) {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 350), () {
+      if (!mounted) {
+        return;
+      }
+      final query = value.trim();
+      _lastQuery = query;
+      if (query.length < 2) {
+        _applyLocalSearch(query);
+        return;
+      }
+      unawaited(_searchRemote(query));
+    });
+  }
+
+  Future<void> _loadCatalogVariants() async {
+    try {
+      final tree = await ref
+          .read(inventoryRepositoryProvider)
+          .fetchCatalogTree();
+      if (!mounted) {
+        return;
+      }
+      final flattened = _flattenTree(tree)
+        ..retainWhere((item) => item.currentStock > 0);
+
+      setState(() {
+        _catalogVariants = flattened;
+        _visibleVariants = _sortForDisplay(flattened).take(60).toList();
+        _isBootstrapping = false;
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isBootstrapping = false;
+        _searchError = '$error';
+      });
+    }
+  }
+
+  List<SearchVariantResult> _flattenTree(List<Category> categories) {
+    final variants = <SearchVariantResult>[];
+    for (final category in categories) {
+      for (final model in category.models) {
+        for (final part in model.parts) {
+          for (final variant in part.variants) {
+            variants.add(
+              SearchVariantResult.fromCatalogNode(
+                variantId: variant.id,
+                category: category.name,
+                model: model.name,
+                part: part.name,
+                grade: variant.name,
+                sellPrice: variant.sellPrice,
+                currentStock: variant.currentStock,
+                photoUrl: variant.photoUrl,
+              ),
+            );
+          }
+        }
+      }
+    }
+    return variants;
+  }
+
+  void _applyLocalSearch(String query) {
+    final normalized = query.toLowerCase().trim();
+    final filtered = _catalogVariants.where((item) {
+      if (item.currentStock <= 0) {
+        return false;
+      }
+      if (normalized.isEmpty) {
+        return true;
+      }
+      return item.displayName.toLowerCase().contains(normalized) ||
+          item.category.toLowerCase().contains(normalized) ||
+          item.model.toLowerCase().contains(normalized) ||
+          item.part.toLowerCase().contains(normalized) ||
+          item.grade.toLowerCase().contains(normalized);
+    }).toList();
+
+    setState(() {
+      _searchError = null;
+      _isSearching = false;
+      final sorted = _sortForDisplay(filtered);
+      _visibleVariants = normalized.isEmpty ? sorted.take(60).toList() : sorted;
+    });
+  }
+
+  Future<void> _searchRemote(String query) async {
+    setState(() {
+      _isSearching = true;
+      _searchError = null;
+    });
+
+    try {
+      final response = await ref
+          .read(transactionsRepositoryProvider)
+          .searchVariants(query: query, inStock: true);
+      if (!mounted) {
+        return;
+      }
+
+      final normalized = query.toLowerCase();
+      final local = _catalogVariants.where((item) {
+        return item.displayName.toLowerCase().contains(normalized) ||
+            item.category.toLowerCase().contains(normalized) ||
+            item.model.toLowerCase().contains(normalized) ||
+            item.part.toLowerCase().contains(normalized) ||
+            item.grade.toLowerCase().contains(normalized);
+      });
+      final merged = _mergeSearchResults(response.data, local.toList());
+      setState(() {
+        _visibleVariants = _sortForDisplay(merged);
+        _isSearching = false;
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      final normalized = query.toLowerCase();
+      final fallback = _catalogVariants.where((item) {
+        return item.displayName.toLowerCase().contains(normalized) ||
+            item.category.toLowerCase().contains(normalized) ||
+            item.model.toLowerCase().contains(normalized) ||
+            item.part.toLowerCase().contains(normalized) ||
+            item.grade.toLowerCase().contains(normalized);
+      }).toList();
+      setState(() {
+        _visibleVariants = _sortForDisplay(fallback);
+        _searchError = fallback.isEmpty ? '$error' : null;
+        _isSearching = false;
+      });
+    }
+  }
+
+  List<SearchVariantResult> _mergeSearchResults(
+    List<SearchVariantResult> remote,
+    List<SearchVariantResult> local,
+  ) {
+    final seen = <int>{};
+    final merged = <SearchVariantResult>[];
+
+    for (final item in [...remote, ...local]) {
+      if (item.currentStock <= 0) {
+        continue;
+      }
+      if (seen.add(item.variantId)) {
+        merged.add(item);
+      }
+    }
+    return merged;
+  }
+
+  List<SearchVariantResult> _sortForDisplay(List<SearchVariantResult> items) {
+    final sorted = [...items];
+    sorted.sort((left, right) {
+      final stockCompare = right.currentStock.compareTo(left.currentStock);
+      if (stockCompare != 0) {
+        return stockCompare;
+      }
+      return left.displayName.compareTo(right.displayName);
+    });
+    return sorted;
+  }
+
+  void _retrySearch() {
+    if (_lastQuery.length >= 2) {
+      unawaited(_searchRemote(_lastQuery));
+      return;
+    }
+    unawaited(_loadCatalogVariants());
   }
 }
 
@@ -208,9 +462,10 @@ class _TransactionsHeader extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Bangun transaksi cepat: cari varian, atur kuantitas, tetapkan harga, lalu checkout tanpa bolak-balik menu.',
+                  'Transaksi POS',
                   style: textTheme.bodyMedium?.copyWith(
                     color: Colors.white.withValues(alpha: 0.74),
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
@@ -233,7 +488,7 @@ class _TransactionsHeader extends StatelessWidget {
                 labelColor: Colors.white,
                 unselectedLabelColor: AppTheme.textSecondary,
                 tabs: [
-                  Tab(text: 'Checkout'),
+                  Tab(text: 'POS'),
                   Tab(text: 'Riwayat'),
                 ],
               ),
@@ -245,157 +500,231 @@ class _TransactionsHeader extends StatelessWidget {
   }
 }
 
-class _CheckoutHeroCard extends StatelessWidget {
-  const _CheckoutHeroCard({
-    required this.itemCount,
-    required this.totalAmount,
-    required this.paidAmount,
-    required this.changeAmount,
-    required this.hasItems,
-    required this.onAddItem,
-    required this.onSetExactAmount,
-    required this.onClearDraft,
-  });
+class _PosVariantCard extends StatelessWidget {
+  const _PosVariantCard({required this.item, required this.onAdd});
 
-  final int itemCount;
-  final int totalAmount;
-  final int paidAmount;
-  final int changeAmount;
-  final bool hasItems;
-  final VoidCallback onAddItem;
-  final VoidCallback onSetExactAmount;
-  final VoidCallback onClearDraft;
+  final SearchVariantResult item;
+  final VoidCallback onAdd;
 
   @override
   Widget build(BuildContext context) {
     return AppSectionCard(
-      padding: EdgeInsets.zero,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              AppTheme.warmPrimary.withValues(alpha: 0.16),
-              Colors.white,
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Checkout aktif',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Semua aksi utama untuk kasir diletakkan di satu area: tambah item, uang pas, dan reset transaksi.',
-            ),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: [
-                _HeroMetric(
-                  label: 'Item',
-                  value: '$itemCount',
-                  tone: AppTheme.headerDark,
-                ),
-                _HeroMetric(
-                  label: 'Total',
-                  value: AppFormatters.rupiah(totalAmount),
-                  tone: AppTheme.warmPrimary,
-                ),
-                _HeroMetric(
-                  label: 'Bayar',
-                  value: AppFormatters.rupiah(paidAmount),
-                  tone: AppTheme.info,
-                ),
-                _HeroMetric(
-                  label: 'Kembalian',
-                  value: AppFormatters.rupiah(changeAmount),
-                  tone: changeAmount < 0
-                      ? AppTheme.warmAccent
-                      : AppTheme.success,
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: [
-                ElevatedButton.icon(
-                  onPressed: onAddItem,
-                  icon: const Icon(Icons.add_shopping_cart_rounded),
-                  label: const Text('Tambah Item'),
-                ),
-                OutlinedButton.icon(
-                  onPressed: hasItems ? onSetExactAmount : null,
-                  icon: const Icon(Icons.payments_outlined),
-                  label: const Text('Uang Pas'),
-                ),
-                OutlinedButton.icon(
-                  onPressed: hasItems ? onClearDraft : null,
-                  icon: const Icon(Icons.cleaning_services_outlined),
-                  label: const Text('Kosongkan'),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _HeroMetric extends StatelessWidget {
-  const _HeroMetric({
-    required this.label,
-    required this.value,
-    required this.tone,
-  });
-
-  final String label;
-  final String value;
-  final Color tone;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      constraints: const BoxConstraints(minWidth: 124),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: tone.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Text(
-            label,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: tone,
-              fontWeight: FontWeight.w700,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.category.toUpperCase(),
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    color: AppTheme.warmPrimary,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  item.displayName,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Stok: ${item.currentStock}',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'HARGA',
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: AppTheme.textSecondary,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.9,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  AppFormatters.rupiah(item.sellPrice),
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    color: AppTheme.textPrimary,
+                    fontSize: 32,
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 6),
-          Text(value, style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(width: 12),
+          FilledButton(
+            onPressed: onAdd,
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFC8A733),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text('Tambah'),
+          ),
         ],
       ),
     );
   }
 }
 
+class _CheckoutCartBottomBar extends StatelessWidget {
+  const _CheckoutCartBottomBar({
+    required this.itemCount,
+    required this.total,
+    required this.onTap,
+  });
+
+  final int itemCount;
+  final int total;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(0, 8, 0, 6),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: onTap,
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: const Color(0xFFC8A733),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.shopping_cart_checkout, color: Colors.white),
+                const SizedBox(width: 10),
+                Text(
+                  'Lihat Keranjang ($itemCount)',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  AppFormatters.rupiah(total),
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CheckoutCartSheet extends ConsumerStatefulWidget {
+  const _CheckoutCartSheet();
+
+  @override
+  ConsumerState<_CheckoutCartSheet> createState() => _CheckoutCartSheetState();
+}
+
+class _CheckoutCartSheetState extends ConsumerState<_CheckoutCartSheet> {
+  late final TextEditingController _paidAmountController;
+  late final TextEditingController _noteController;
+
+  @override
+  void initState() {
+    super.initState();
+    final draft = ref.read(transactionDraftControllerProvider);
+    _paidAmountController = TextEditingController(
+      text: draft.paidAmount == 0 ? '' : '${draft.paidAmount}',
+    );
+    _noteController = TextEditingController(text: draft.note);
+  }
+
+  @override
+  void dispose() {
+    _paidAmountController.dispose();
+    _noteController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final draft = ref.watch(transactionDraftControllerProvider);
+    final controller = ref.read(transactionDraftControllerProvider.notifier);
+
+    ref.listen(transactionDraftControllerProvider, (previous, next) {
+      if (previous?.errorMessage != next.errorMessage &&
+          next.errorMessage != null) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(next.errorMessage!)));
+      }
+    });
+
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          16,
+          8,
+          16,
+          16 + MediaQuery.viewInsetsOf(context).bottom,
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              _CartPanel(
+                items: draft.items,
+                onAddItem: () => Navigator.of(context).pop(),
+                addLabel: 'Kembali ke POS',
+              ),
+              const SizedBox(height: 16),
+              _PaymentPanel(
+                draft: draft,
+                paidAmountController: _paidAmountController,
+                noteController: _noteController,
+                onPaidChanged: controller.updatePaidAmount,
+                onNoteChanged: controller.updateNote,
+                onSetExactAmount: () {
+                  _paidAmountController.text = '${draft.totalAmount}';
+                  controller.setPaidAmountValue(draft.totalAmount);
+                },
+                onSubmit: () async {
+                  final receipt = await controller.submit();
+                  if (receipt == null || !context.mounted) {
+                    return;
+                  }
+                  Navigator.of(context).pop(receipt);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _CartPanel extends StatelessWidget {
-  const _CartPanel({required this.items, required this.onAddItem});
+  const _CartPanel({
+    required this.items,
+    required this.onAddItem,
+    this.addLabel = 'Cari Varian',
+  });
 
   final List<CartItemDraft> items;
   final VoidCallback onAddItem;
+  final String addLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -425,13 +754,13 @@ class _CartPanel extends StatelessWidget {
               OutlinedButton.icon(
                 onPressed: onAddItem,
                 icon: const Icon(Icons.search_rounded),
-                label: const Text('Cari Varian'),
+                label: Text(addLabel),
               ),
             ],
           ),
           const SizedBox(height: 16),
           if (items.isEmpty)
-            _EmptyCartState(onAddItem: onAddItem)
+            _EmptyCartState(onAddItem: onAddItem, addLabel: addLabel)
           else
             Column(
               children: items
@@ -450,9 +779,13 @@ class _CartPanel extends StatelessWidget {
 }
 
 class _EmptyCartState extends StatelessWidget {
-  const _EmptyCartState({required this.onAddItem});
+  const _EmptyCartState({
+    required this.onAddItem,
+    this.addLabel = 'Tambah Varian',
+  });
 
   final VoidCallback onAddItem;
+  final String addLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -487,7 +820,7 @@ class _EmptyCartState extends StatelessWidget {
           ElevatedButton.icon(
             onPressed: onAddItem,
             icon: const Icon(Icons.add_shopping_cart_rounded),
-            label: const Text('Tambah Varian'),
+            label: Text(addLabel),
           ),
         ],
       ),

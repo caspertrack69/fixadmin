@@ -23,10 +23,10 @@ class DashboardScreen extends ConsumerWidget {
         ? 2
         : 1;
     final statCardHeight = width >= 980
-        ? 176.0
+        ? 184.0
         : width >= 680
-        ? 168.0
-        : 156.0;
+        ? 176.0
+        : 166.0;
 
     return RefreshIndicator(
       onRefresh: () async => ref.invalidate(dashboardProvider),
@@ -156,11 +156,12 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppSectionCard(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(12),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final compact = constraints.maxHeight <= 132;
-          final ultraCompact = constraints.maxHeight <= 124;
+          final compact = constraints.maxHeight <= 144;
+          final ultraCompact = constraints.maxHeight <= 136;
+          final textTheme = Theme.of(context).textTheme;
 
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -170,9 +171,9 @@ class _StatCard extends StatelessWidget {
                 children: [
                   CircleAvatar(
                     radius: ultraCompact
-                        ? 14
+                        ? 13
                         : compact
-                        ? 16
+                        ? 15
                         : 20,
                     backgroundColor: Theme.of(
                       context,
@@ -180,69 +181,67 @@ class _StatCard extends StatelessWidget {
                     child: Icon(
                       icon,
                       size: ultraCompact
-                          ? 14
+                          ? 13
                           : compact
-                          ? 16
+                          ? 15
                           : 20,
                     ),
                   ),
-                  SizedBox(width: ultraCompact ? 10 : 12),
+                  SizedBox(width: ultraCompact ? 8 : 12),
                   Expanded(
                     child: Text(
                       title,
                       maxLines: compact ? 1 : 2,
                       overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.titleMedium,
+                      style: compact
+                          ? textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            )
+                          : textTheme.titleMedium,
                     ),
                   ),
                 ],
               ),
               SizedBox(
                 height: ultraCompact
-                    ? 6
+                    ? 4
                     : compact
-                    ? 8
+                    ? 6
                     : 14,
               ),
               Expanded(
-                child: ultraCompact
-                    ? Align(
-                        alignment: Alignment.bottomLeft,
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            value,
-                            style: Theme.of(
-                              context,
-                            ).textTheme.headlineSmall?.copyWith(fontSize: 20),
+                child: Align(
+                  alignment: Alignment.bottomLeft,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          value,
+                          style: textTheme.headlineSmall?.copyWith(
+                            fontSize: ultraCompact
+                                ? 20
+                                : compact
+                                ? 22
+                                : 30,
                           ),
                         ),
-                      )
-                    : Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          FittedBox(
-                            fit: BoxFit.scaleDown,
-                            alignment: Alignment.centerLeft,
-                            child: Text(
-                              value,
-                              style: Theme.of(context).textTheme.headlineSmall
-                                  ?.copyWith(fontSize: compact ? 22 : 30),
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            subtitle,
-                            maxLines: compact ? 1 : 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: compact
-                                ? Theme.of(context).textTheme.bodySmall
-                                : null,
-                          ),
-                        ],
                       ),
+                      if (!ultraCompact) ...[
+                        SizedBox(height: compact ? 2 : 4),
+                        Text(
+                          subtitle,
+                          maxLines: compact ? 1 : 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: compact ? textTheme.bodySmall : null,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
               ),
             ],
           );

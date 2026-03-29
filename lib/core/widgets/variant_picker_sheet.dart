@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/theme/app_theme.dart';
+import '../../features/inventory/models/inventory_models.dart';
 import '../../features/transactions/models/transaction_models.dart';
 import '../formatters/app_formatters.dart';
 import '../providers/app_providers.dart';
@@ -42,15 +43,18 @@ class VariantPickerSheet extends ConsumerStatefulWidget {
 class _VariantPickerSheetState extends ConsumerState<VariantPickerSheet> {
   late final TextEditingController _queryController;
   Timer? _debounce;
+  bool _isBootstrapping = true;
   bool _isLoading = false;
   String? _error;
   String _lastQuery = '';
+  List<SearchVariantResult> _catalogResults = const [];
   List<SearchVariantResult> _results = const [];
 
   @override
   void initState() {
     super.initState();
     _queryController = TextEditingController();
+    unawaited(_loadCatalogVariants());
   }
 
   @override
@@ -165,6 +169,12 @@ class _VariantPickerSheetState extends ConsumerState<VariantPickerSheet> {
   }
 
   Widget _buildBody(BuildContext context) {
+    if (_isBootstrapping && _results.isEmpty) {
+      return const Center(
+        key: ValueKey('bootstrap-loading'),
+        child: CircularProgressIndicator(),
+      );
+    }
     if (_isLoading) {
       return const Center(
         key: ValueKey('loading'),
@@ -203,22 +213,16 @@ class _VariantPickerSheetState extends ConsumerState<VariantPickerSheet> {
         ),
       );
     }
-    if (_queryController.text.trim().length < 2) {
-      return const _PickerInfoState(
-        key: ValueKey('hint'),
-        icon: Icons.manage_search_rounded,
-        title: 'Mulai pencarian',
-        message:
-            'Masukkan minimal 2 karakter untuk menampilkan varian yang cocok.',
-      );
-    }
     if (_results.isEmpty) {
-      return const _PickerInfoState(
-        key: ValueKey('empty'),
+      return _PickerInfoState(
+        key: const ValueKey('empty'),
         icon: Icons.inventory_2_outlined,
-        title: 'Varian tidak ditemukan',
-        message:
-            'Coba kata kunci lain yang lebih spesifik pada kategori, model, part, atau grade.',
+        title: _queryController.text.trim().isEmpty
+            ? 'Produk belum tersedia'
+            : 'Varian tidak ditemukan',
+        message: _queryController.text.trim().isEmpty
+            ? 'Belum ada varian yang siap dipilih untuk transaksi ini.'
+            : 'Coba kata kunci lain yang lebih spesifik pada kategori, model, part, atau grade.',
       );
     }
 
@@ -309,7 +313,7 @@ class _VariantPickerSheetState extends ConsumerState<VariantPickerSheet> {
       final query = value.trim();
       if (query.length < 2) {
         setState(() {
-          _results = const [];
+          _results = _buildLocalResults(query);
           _error = null;
           _isLoading = false;
           _lastQuery = query;
@@ -333,22 +337,122 @@ class _VariantPickerSheetState extends ConsumerState<VariantPickerSheet> {
         query: query,
         inStock: widget.inStockOnly ? true : null,
       );
+      final localMatches = _buildLocalResults(query);
       if (!mounted) {
         return;
       }
       setState(() {
-        _results = response.data;
+        _results = _mergeResults(response.data, localMatches);
         _isLoading = false;
       });
     } catch (error) {
+      final fallbackResults = _buildLocalResults(query);
       if (!mounted) {
         return;
       }
       setState(() {
-        _error = '$error';
+        _results = fallbackResults;
+        _error = fallbackResults.isEmpty ? '$error' : null;
         _isLoading = false;
       });
     }
+  }
+
+  Future<void> _loadCatalogVariants() async {
+    try {
+      final tree = await ref
+          .read(inventoryRepositoryProvider)
+          .fetchCatalogTree();
+      if (!mounted) {
+        return;
+      }
+
+      final variants = _flattenCatalogTree(tree);
+      setState(() {
+        _catalogResults = variants;
+        _results = _buildLocalResults(_queryController.text);
+        _isBootstrapping = false;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isBootstrapping = false;
+      });
+    }
+  }
+
+  List<SearchVariantResult> _flattenCatalogTree(List<Category> tree) {
+    final items = <SearchVariantResult>[];
+    for (final category in tree) {
+      for (final model in category.models) {
+        for (final part in model.parts) {
+          for (final variant in part.variants) {
+            items.add(
+              SearchVariantResult.fromCatalogNode(
+                variantId: variant.id,
+                category: category.name,
+                model: model.name,
+                part: part.name,
+                grade: variant.name,
+                sellPrice: variant.sellPrice,
+                currentStock: variant.currentStock,
+                photoUrl: variant.photoUrl,
+              ),
+            );
+          }
+        }
+      }
+    }
+    return items;
+  }
+
+  List<SearchVariantResult> _buildLocalResults(String query) {
+    final normalized = query.trim().toLowerCase();
+    final matches =
+        _catalogResults.where((item) {
+          if (widget.inStockOnly && item.currentStock <= 0) {
+            return false;
+          }
+          if (normalized.isEmpty) {
+            return true;
+          }
+
+          return item.displayName.toLowerCase().contains(normalized) ||
+              item.category.toLowerCase().contains(normalized) ||
+              item.model.toLowerCase().contains(normalized) ||
+              item.part.toLowerCase().contains(normalized) ||
+              item.grade.toLowerCase().contains(normalized);
+        }).toList()..sort((left, right) {
+          final stockCompare = right.currentStock.compareTo(left.currentStock);
+          if (stockCompare != 0) {
+            return stockCompare;
+          }
+          return left.displayName.compareTo(right.displayName);
+        });
+
+    if (normalized.isEmpty && matches.length > 40) {
+      return matches.take(40).toList();
+    }
+
+    return matches;
+  }
+
+  List<SearchVariantResult> _mergeResults(
+    List<SearchVariantResult> primary,
+    List<SearchVariantResult> fallback,
+  ) {
+    final merged = <SearchVariantResult>[];
+    final seenIds = <int>{};
+
+    for (final item in [...primary, ...fallback]) {
+      if (seenIds.add(item.variantId)) {
+        merged.add(item);
+      }
+    }
+
+    return merged;
   }
 }
 

@@ -43,100 +43,15 @@ class _AppShellState extends ConsumerState<AppShell> {
 
     final pageIndex = visibleTabs.indexOf(_selectedTab);
     final pages = visibleTabs.map(_buildPage).toList();
-    final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
       body: SafeArea(
         child: Column(
           children: [
-            Container(
-              margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1F2937),
-                borderRadius: BorderRadius.circular(28),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          AppFormatters.headerDate.format(DateTime.now()),
-                          style: textTheme.bodySmall?.copyWith(
-                            color: Colors.white70,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Kasirfix',
-                          style: textTheme.headlineMedium?.copyWith(
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Mode aktif: ${_labelForTab(_selectedTab)}',
-                          style: textTheme.bodyMedium?.copyWith(
-                            color: Colors.white70,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  InkWell(
-                    borderRadius: BorderRadius.circular(18),
-                    onTap: _showProfileSheet,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 12,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          CircleAvatar(
-                            backgroundColor: Colors.white,
-                            foregroundColor: const Color(0xFF1F2937),
-                            child: Text(
-                              widget.session.user.name.characters.first,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                widget.session.user.name,
-                                style: textTheme.titleSmall?.copyWith(
-                                  color: Colors.white,
-                                ),
-                              ),
-                              Text(
-                                widget.session.user.role.toUpperCase(),
-                                style: textTheme.bodySmall?.copyWith(
-                                  color: Colors.white70,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(width: 8),
-                          const Icon(
-                            Icons.keyboard_arrow_down_rounded,
-                            color: Colors.white,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+            _ShellAppBar(
+              session: widget.session,
+              activeLabel: _labelForTab(_selectedTab),
+              onProfileTap: _showProfileSheet,
             ),
             Expanded(
               child: IndexedStack(index: pageIndex, children: pages),
@@ -144,45 +59,16 @@ class _AppShellState extends ConsumerState<AppShell> {
           ],
         ),
       ),
-      bottomNavigationBar: NavigationBarTheme(
-        data: NavigationBarThemeData(
-          height: 74,
-          indicatorColor: AppTheme.headerDark,
-          backgroundColor: Colors.white,
-          iconTheme: WidgetStateProperty.resolveWith((states) {
-            if (states.contains(WidgetState.selected)) {
-              return const IconThemeData(color: Colors.white);
-            }
-            return const IconThemeData(color: AppTheme.textSecondary);
-          }),
-          labelTextStyle: WidgetStateProperty.resolveWith((states) {
-            final base = textTheme.labelMedium;
-            if (states.contains(WidgetState.selected)) {
-              return base?.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
-              );
-            }
-            return base?.copyWith(color: AppTheme.textSecondary);
-          }),
-        ),
-        child: NavigationBar(
-          selectedIndex: pageIndex,
-          onDestinationSelected: (index) {
-            setState(() {
-              _selectedTab = visibleTabs[index];
-            });
-          },
-          destinations: visibleTabs
-              .map(
-                (tab) => NavigationDestination(
-                  icon: Icon(_iconForTab(tab)),
-                  selectedIcon: Icon(_iconForTab(tab)),
-                  label: _labelForTab(tab),
-                ),
-              )
-              .toList(),
-        ),
+      bottomNavigationBar: _ShellBottomNavigation(
+        visibleTabs: visibleTabs,
+        selectedTab: _selectedTab,
+        labelForTab: _labelForTab,
+        iconForTab: _iconForTab,
+        onSelected: (tab) {
+          setState(() {
+            _selectedTab = tab;
+          });
+        },
       ),
     );
   }
@@ -272,6 +158,249 @@ class _AppShellState extends ConsumerState<AppShell> {
           ),
         );
       },
+    );
+  }
+}
+
+class _ShellAppBar extends StatelessWidget {
+  const _ShellAppBar({
+    required this.session,
+    required this.activeLabel,
+    required this.onProfileTap,
+  });
+
+  final AuthSession session;
+  final String activeLabel;
+  final VoidCallback onProfileTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: AppTheme.headerDark,
+          borderRadius: BorderRadius.circular(22),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Kasirfix',
+                    style: textTheme.headlineSmall?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '$activeLabel - ${AppFormatters.headerDate.format(DateTime.now())}',
+                    style: textTheme.bodySmall?.copyWith(color: Colors.white70),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            _ProfileButton(session: session, onTap: onProfileTap),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileButton extends StatelessWidget {
+  const _ProfileButton({required this.session, required this.onTap});
+
+  final AuthSession session;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircleAvatar(
+                radius: 15,
+                backgroundColor: Colors.white,
+                foregroundColor: AppTheme.headerDark,
+                child: Text(
+                  session.user.name.characters.first.toUpperCase(),
+                  style: textTheme.labelLarge?.copyWith(
+                    color: AppTheme.headerDark,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                session.user.role.toUpperCase(),
+                style: textTheme.labelMedium?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(width: 2),
+              const Icon(
+                Icons.keyboard_arrow_down_rounded,
+                color: Colors.white,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ShellBottomNavigation extends StatelessWidget {
+  const _ShellBottomNavigation({
+    required this.visibleTabs,
+    required this.selectedTab,
+    required this.labelForTab,
+    required this.iconForTab,
+    required this.onSelected,
+  });
+
+  final List<ShellTab> visibleTabs;
+  final ShellTab selectedTab;
+  final String Function(ShellTab tab) labelForTab;
+  final IconData Function(ShellTab tab) iconForTab;
+  final ValueChanged<ShellTab> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(28),
+            border: Border.all(color: const Color(0xFFE5E7EB)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x120F172A),
+                blurRadius: 24,
+                offset: Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+            child: Row(
+              children: visibleTabs
+                  .map(
+                    (tab) => Expanded(
+                      child: _ShellNavItem(
+                        icon: iconForTab(tab),
+                        label: labelForTab(tab),
+                        selected: tab == selectedTab,
+                        onTap: () => onSelected(tab),
+                      ),
+                    ),
+                  )
+                  .toList(),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ShellNavItem extends StatelessWidget {
+  const _ShellNavItem({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
+    return Semantics(
+      button: true,
+      selected: selected,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOutCubic,
+                height: 42,
+                width: selected ? 56 : 46,
+                decoration: BoxDecoration(
+                  color: selected
+                      ? AppTheme.headerDark
+                      : AppTheme.backgroundCard,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: selected
+                        ? AppTheme.headerDark
+                        : const Color(0xFFE5E7EB),
+                  ),
+                ),
+                child: Icon(
+                  icon,
+                  color: selected ? Colors.white : AppTheme.textSecondary,
+                  size: selected ? 22 : 20,
+                ),
+              ),
+              const SizedBox(height: 7),
+              AnimatedDefaultTextStyle(
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOutCubic,
+                style: (textTheme.labelMedium ?? const TextStyle()).copyWith(
+                  color: selected
+                      ? AppTheme.headerDark
+                      : AppTheme.textSecondary,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                ),
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

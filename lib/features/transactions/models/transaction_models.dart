@@ -39,6 +39,29 @@ class SearchVariantResult {
           : parseString(json['photo_url']),
     );
   }
+
+  factory SearchVariantResult.fromCatalogNode({
+    required int variantId,
+    required String category,
+    required String model,
+    required String part,
+    required String grade,
+    required int sellPrice,
+    required int currentStock,
+    String? photoUrl,
+  }) {
+    return SearchVariantResult(
+      variantId: variantId,
+      displayName: '$category - $model - $part - $grade',
+      category: category,
+      model: model,
+      part: part,
+      grade: grade,
+      sellPrice: sellPrice,
+      currentStock: currentStock,
+      photoUrl: photoUrl,
+    );
+  }
 }
 
 class TransactionHistoryItem {

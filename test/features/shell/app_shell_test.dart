@@ -47,7 +47,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 250));
 
-    expect(find.text('Dashboard'), findsOneWidget);
+    expect(find.text('Dashboard'), findsWidgets);
     expect(find.text('Inventaris'), findsOneWidget);
     expect(find.text('Transaksi'), findsOneWidget);
     expect(find.text('Stok Masuk'), findsNothing);

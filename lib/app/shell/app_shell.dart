@@ -1,26 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../app/theme/app_theme.dart';
 import '../../core/formatters/app_formatters.dart';
 import '../../features/auth/models/auth_session.dart';
 import '../../features/auth/presentation/session_controller.dart';
 import '../../features/dashboard/presentation/dashboard_screen.dart';
 import '../../features/inventory/presentation/inventory_screen.dart';
+import '../../features/printer/presentation/printer_settings_screen.dart';
 import '../../features/stock_in/presentation/stock_in_screen.dart';
 import '../../features/transactions/presentation/transactions_screen.dart';
 
-enum ShellTab {
-  dashboard,
-  inventory,
-  transactions,
-  stockIn,
-}
+enum ShellTab { dashboard, inventory, transactions, stockIn }
 
 class AppShell extends ConsumerStatefulWidget {
-  const AppShell({
-    super.key,
-    required this.session,
-  });
+  const AppShell({super.key, required this.session});
 
   final AuthSession session;
 
@@ -76,7 +70,7 @@ class _AppShellState extends ConsumerState<AppShell> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Fixadmin Kasir',
+                          'Kasirfix',
                           style: textTheme.headlineMedium?.copyWith(
                             color: Colors.white,
                           ),
@@ -145,29 +139,50 @@ class _AppShellState extends ConsumerState<AppShell> {
               ),
             ),
             Expanded(
-              child: IndexedStack(
-                index: pageIndex,
-                children: pages,
-              ),
+              child: IndexedStack(index: pageIndex, children: pages),
             ),
           ],
         ),
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: pageIndex,
-        onDestinationSelected: (index) {
-          setState(() {
-            _selectedTab = visibleTabs[index];
-          });
-        },
-        destinations: visibleTabs
-            .map(
-              (tab) => NavigationDestination(
-                icon: Icon(_iconForTab(tab)),
-                label: _labelForTab(tab),
-              ),
-            )
-            .toList(),
+      bottomNavigationBar: NavigationBarTheme(
+        data: NavigationBarThemeData(
+          height: 74,
+          indicatorColor: AppTheme.headerDark,
+          backgroundColor: Colors.white,
+          iconTheme: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
+              return const IconThemeData(color: Colors.white);
+            }
+            return const IconThemeData(color: AppTheme.textSecondary);
+          }),
+          labelTextStyle: WidgetStateProperty.resolveWith((states) {
+            final base = textTheme.labelMedium;
+            if (states.contains(WidgetState.selected)) {
+              return base?.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+              );
+            }
+            return base?.copyWith(color: AppTheme.textSecondary);
+          }),
+        ),
+        child: NavigationBar(
+          selectedIndex: pageIndex,
+          onDestinationSelected: (index) {
+            setState(() {
+              _selectedTab = visibleTabs[index];
+            });
+          },
+          destinations: visibleTabs
+              .map(
+                (tab) => NavigationDestination(
+                  icon: Icon(_iconForTab(tab)),
+                  selectedIcon: Icon(_iconForTab(tab)),
+                  label: _labelForTab(tab),
+                ),
+              )
+              .toList(),
+        ),
       ),
     );
   }
@@ -212,10 +227,7 @@ class _AppShellState extends ConsumerState<AppShell> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                widget.session.user.name,
-                style: textTheme.titleLarge,
-              ),
+              Text(widget.session.user.name, style: textTheme.titleLarge),
               const SizedBox(height: 4),
               Text(widget.session.user.email),
               const SizedBox(height: 20),
@@ -228,6 +240,21 @@ class _AppShellState extends ConsumerState<AppShell> {
                       ? 'Memiliki akses stok masuk'
                       : 'Tanpa akses stok masuk',
                 ),
+              ),
+              const SizedBox(height: 8),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.print_outlined),
+                title: const Text('Printer & Struk'),
+                subtitle: const Text('Atur printer dan format cetak'),
+                onTap: () async {
+                  Navigator.of(context).pop();
+                  await Navigator.of(this.context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const PrinterSettingsScreen(),
+                    ),
+                  );
+                },
               ),
               const SizedBox(height: 12),
               SizedBox(

@@ -88,8 +88,9 @@ class StockInDraftState {
     bool clearError = false,
   }) {
     return StockInDraftState(
-      selectedVariant:
-          clearVariant ? null : selectedVariant ?? this.selectedVariant,
+      selectedVariant: clearVariant
+          ? null
+          : selectedVariant ?? this.selectedVariant,
       qty: qty ?? this.qty,
       buyPrice: buyPrice ?? this.buyPrice,
       note: note ?? this.note,

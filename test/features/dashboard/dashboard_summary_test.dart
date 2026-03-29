@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:fixadmin/features/dashboard/models/dashboard_summary.dart';
+import 'package:kasirfix/features/dashboard/models/dashboard_summary.dart';
 
 void main() {
   test('parses numeric dashboard fields when backend sends strings', () {
@@ -9,9 +9,7 @@ void main() {
         'total_transactions': '5',
         'total_revenue': '1500000',
       },
-      'permissions': {
-        'can_input_stock': '1',
-      },
+      'permissions': {'can_input_stock': '1'},
       'low_stock_alert': [
         {
           'variant_id': '3',

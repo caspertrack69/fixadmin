@@ -1,11 +1,7 @@
 import '../../../core/utils/json_parsers.dart';
 
 class Category {
-  const Category({
-    required this.id,
-    required this.name,
-    required this.models,
-  });
+  const Category({required this.id, required this.name, required this.models});
 
   final int id;
   final String name;
@@ -27,14 +23,8 @@ class Category {
     );
   }
 
-  Category copyWith({
-    List<DeviceModel>? models,
-  }) {
-    return Category(
-      id: id,
-      name: name,
-      models: models ?? this.models,
-    );
+  Category copyWith({List<DeviceModel>? models}) {
+    return Category(id: id, name: name, models: models ?? this.models);
   }
 }
 
@@ -65,23 +55,13 @@ class DeviceModel {
     );
   }
 
-  DeviceModel copyWith({
-    List<Part>? parts,
-  }) {
-    return DeviceModel(
-      id: id,
-      name: name,
-      parts: parts ?? this.parts,
-    );
+  DeviceModel copyWith({List<Part>? parts}) {
+    return DeviceModel(id: id, name: name, parts: parts ?? this.parts);
   }
 }
 
 class Part {
-  const Part({
-    required this.id,
-    required this.name,
-    required this.variants,
-  });
+  const Part({required this.id, required this.name, required this.variants});
 
   final int id;
   final String name;
@@ -103,14 +83,8 @@ class Part {
     );
   }
 
-  Part copyWith({
-    List<Variant>? variants,
-  }) {
-    return Part(
-      id: id,
-      name: name,
-      variants: variants ?? this.variants,
-    );
+  Part copyWith({List<Variant>? variants}) {
+    return Part(id: id, name: name, variants: variants ?? this.variants);
   }
 }
 
@@ -140,7 +114,9 @@ class Variant {
       sellPrice: parseInt(json['sell_price']),
       currentStock: parseInt(json['current_stock']),
       minStock: parseInt(json['min_stock']),
-      photoUrl: json['photo_url'] == null ? null : parseString(json['photo_url']),
+      photoUrl: json['photo_url'] == null
+          ? null
+          : parseString(json['photo_url']),
     );
   }
 }

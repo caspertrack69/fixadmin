@@ -34,7 +34,9 @@ class SearchVariantResult {
       grade: parseString(json['grade']),
       sellPrice: parseInt(json['sell_price']),
       currentStock: parseInt(json['current_stock']),
-      photoUrl: json['photo_url'] == null ? null : parseString(json['photo_url']),
+      photoUrl: json['photo_url'] == null
+          ? null
+          : parseString(json['photo_url']),
     );
   }
 }
@@ -146,11 +148,7 @@ class TransactionPayloadItem {
   final int sellPrice;
 
   Map<String, dynamic> toJson() {
-    return {
-      'variant_id': variantId,
-      'qty': qty,
-      'sell_price': sellPrice,
-    };
+    return {'variant_id': variantId, 'qty': qty, 'sell_price': sellPrice};
   }
 }
 

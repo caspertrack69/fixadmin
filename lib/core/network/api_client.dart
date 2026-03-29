@@ -5,9 +5,7 @@ import '../storage/token_store.dart';
 import 'api_exception.dart';
 
 class ApiClient {
-  ApiClient({
-    required this.dio,
-  });
+  ApiClient({required this.dio});
 
   final Dio dio;
 
@@ -82,10 +80,7 @@ class ApiClient {
     required T Function(Map<String, dynamic> json) parser,
   }) async {
     try {
-      final response = await dio.post<Object?>(
-        path,
-        data: body,
-      );
+      final response = await dio.post<Object?>(path, data: body);
       final data = _extractMapData(response.data);
       return parser(data);
     } on DioException catch (exception) {
@@ -93,10 +88,7 @@ class ApiClient {
     }
   }
 
-  Future<void> postVoid(
-    String path, {
-    Object? body,
-  }) async {
+  Future<void> postVoid(String path, {Object? body}) async {
     try {
       await dio.post<Object?>(path, data: body);
     } on DioException catch (exception) {

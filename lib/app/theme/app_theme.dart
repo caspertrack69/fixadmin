@@ -62,9 +62,7 @@ final class AppTheme {
           color: textPrimary,
           height: 1.4,
         ),
-        bodySmall: baseTextTheme.bodySmall?.copyWith(
-          color: textSecondary,
-        ),
+        bodySmall: baseTextTheme.bodySmall?.copyWith(color: textSecondary),
         labelLarge: baseTextTheme.labelLarge?.copyWith(
           fontWeight: FontWeight.w600,
           letterSpacing: 0.2,

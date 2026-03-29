@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:fixadmin/app/shell/app_shell.dart';
-import 'package:fixadmin/core/models/paged_response.dart';
-import 'package:fixadmin/core/providers/app_providers.dart';
-import 'package:fixadmin/features/auth/models/auth_session.dart';
-import 'package:fixadmin/features/auth/models/session_user.dart';
-import 'package:fixadmin/features/dashboard/data/dashboard_repository.dart';
-import 'package:fixadmin/features/dashboard/models/dashboard_summary.dart';
-import 'package:fixadmin/features/inventory/data/inventory_repository.dart';
-import 'package:fixadmin/features/inventory/models/inventory_models.dart';
-import 'package:fixadmin/features/stock_in/data/stock_in_repository.dart';
-import 'package:fixadmin/features/stock_in/models/stock_in_models.dart';
-import 'package:fixadmin/features/transactions/data/transactions_repository.dart';
-import 'package:fixadmin/features/transactions/models/transaction_models.dart';
+import 'package:kasirfix/app/shell/app_shell.dart';
+import 'package:kasirfix/core/models/paged_response.dart';
+import 'package:kasirfix/core/providers/app_providers.dart';
+import 'package:kasirfix/features/auth/models/auth_session.dart';
+import 'package:kasirfix/features/auth/models/session_user.dart';
+import 'package:kasirfix/features/dashboard/data/dashboard_repository.dart';
+import 'package:kasirfix/features/dashboard/models/dashboard_summary.dart';
+import 'package:kasirfix/features/inventory/data/inventory_repository.dart';
+import 'package:kasirfix/features/inventory/models/inventory_models.dart';
+import 'package:kasirfix/features/stock_in/data/stock_in_repository.dart';
+import 'package:kasirfix/features/stock_in/models/stock_in_models.dart';
+import 'package:kasirfix/features/transactions/data/transactions_repository.dart';
+import 'package:kasirfix/features/transactions/models/transaction_models.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 void main() {
@@ -44,7 +44,8 @@ void main() {
       ),
     );
 
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
 
     expect(find.text('Dashboard'), findsOneWidget);
     expect(find.text('Inventaris'), findsOneWidget);
@@ -56,7 +57,9 @@ void main() {
 final _repoOverrides = [
   dashboardRepositoryProvider.overrideWithValue(_FakeDashboardRepository()),
   inventoryRepositoryProvider.overrideWithValue(_FakeInventoryRepository()),
-  transactionsRepositoryProvider.overrideWithValue(_FakeTransactionsRepository()),
+  transactionsRepositoryProvider.overrideWithValue(
+    _FakeTransactionsRepository(),
+  ),
   stockInRepositoryProvider.overrideWithValue(_FakeStockInRepository()),
 ];
 
@@ -103,12 +106,7 @@ class _FakeTransactionsRepository implements TransactionsRepository {
   }) async {
     return const PagedResponse(
       data: [],
-      meta: PaginationMeta(
-        currentPage: 1,
-        lastPage: 1,
-        perPage: 20,
-        total: 0,
-      ),
+      meta: PaginationMeta(currentPage: 1, lastPage: 1, perPage: 20, total: 0),
     );
   }
 
@@ -121,12 +119,7 @@ class _FakeTransactionsRepository implements TransactionsRepository {
   }) async {
     return const PagedResponse(
       data: [],
-      meta: PaginationMeta(
-        currentPage: 1,
-        lastPage: 1,
-        perPage: 20,
-        total: 0,
-      ),
+      meta: PaginationMeta(currentPage: 1, lastPage: 1, perPage: 20, total: 0),
     );
   }
 }
@@ -145,12 +138,7 @@ class _FakeStockInRepository implements StockInRepository {
   }) async {
     return const PagedResponse(
       data: [],
-      meta: PaginationMeta(
-        currentPage: 1,
-        lastPage: 1,
-        perPage: 20,
-        total: 0,
-      ),
+      meta: PaginationMeta(currentPage: 1, lastPage: 1, perPage: 20, total: 0),
     );
   }
 }

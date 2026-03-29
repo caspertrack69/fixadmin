@@ -1,14 +1,12 @@
 import '../../../app/config/app_config.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/network/api_paths.dart';
 import '../../../core/storage/token_store.dart';
 import '../models/auth_session.dart';
 import '../models/session_user.dart';
 
 abstract class AuthRepository {
-  Future<AuthSession> login({
-    required String email,
-    required String password,
-  });
+  Future<AuthSession> login({required String email, required String password});
 
   Future<SessionUser> me();
   Future<void> logout();
@@ -19,9 +17,9 @@ class ApiAuthRepository implements AuthRepository {
     required ApiClient apiClient,
     required TokenStore tokenStore,
     required SessionCoordinator coordinator,
-  })  : _apiClient = apiClient,
-        _tokenStore = tokenStore,
-        _coordinator = coordinator;
+  }) : _apiClient = apiClient,
+       _tokenStore = tokenStore,
+       _coordinator = coordinator;
 
   final ApiClient _apiClient;
   final TokenStore _tokenStore;
@@ -33,7 +31,7 @@ class ApiAuthRepository implements AuthRepository {
     required String password,
   }) async {
     final session = await _apiClient.postObject<AuthSession>(
-      '/auth/login',
+      ApiPaths.authLogin,
       body: {
         'email': email,
         'password': password,
@@ -46,9 +44,7 @@ class ApiAuthRepository implements AuthRepository {
           user: SessionUser.fromJson(
             rawUser is Map<String, dynamic>
                 ? rawUser
-                : (rawUser as Map).map(
-                    (key, value) => MapEntry('$key', value),
-                  ),
+                : (rawUser as Map).map((key, value) => MapEntry('$key', value)),
           ),
         );
       },
@@ -62,7 +58,7 @@ class ApiAuthRepository implements AuthRepository {
   @override
   Future<SessionUser> me() async {
     return _apiClient.getObject<SessionUser>(
-      '/auth/me',
+      ApiPaths.authMe,
       parser: SessionUser.fromJson,
     );
   }
@@ -70,7 +66,7 @@ class ApiAuthRepository implements AuthRepository {
   @override
   Future<void> logout() async {
     try {
-      await _apiClient.postVoid('/auth/logout');
+      await _apiClient.postVoid(ApiPaths.authLogout);
     } finally {
       await _tokenStore.clearToken();
       await _coordinator.notifySessionChanged();

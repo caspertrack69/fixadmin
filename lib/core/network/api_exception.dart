@@ -54,10 +54,11 @@ class ApiException implements Exception {
       422 => ApiErrorType.validation,
       429 => ApiErrorType.throttled,
       500 || 502 || 503 || 504 => ApiErrorType.server,
-      null when exception.type == DioExceptionType.connectionTimeout ||
-          exception.type == DioExceptionType.receiveTimeout ||
-          exception.type == DioExceptionType.sendTimeout ||
-          exception.type == DioExceptionType.connectionError =>
+      null
+          when exception.type == DioExceptionType.connectionTimeout ||
+              exception.type == DioExceptionType.receiveTimeout ||
+              exception.type == DioExceptionType.sendTimeout ||
+              exception.type == DioExceptionType.connectionError =>
         ApiErrorType.network,
       _ => ApiErrorType.unknown,
     };
@@ -117,8 +118,7 @@ class ApiException implements Exception {
       DioExceptionType.connectionTimeout ||
       DioExceptionType.receiveTimeout ||
       DioExceptionType.sendTimeout ||
-      DioExceptionType.connectionError =>
-        'Koneksi ke server bermasalah.',
+      DioExceptionType.connectionError => 'Koneksi ke server bermasalah.',
       _ => 'Terjadi kesalahan pada permintaan.',
     };
   }

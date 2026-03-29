@@ -6,6 +6,8 @@ import '../../app/config/app_config.dart';
 import '../../features/auth/data/auth_repository.dart';
 import '../../features/dashboard/data/dashboard_repository.dart';
 import '../../features/inventory/data/inventory_repository.dart';
+import '../../features/printer/data/printer_service.dart';
+import '../../features/printer/data/printer_settings_store.dart';
 import '../../features/stock_in/data/stock_in_repository.dart';
 import '../../features/transactions/data/transactions_repository.dart';
 import '../network/api_client.dart';
@@ -17,6 +19,14 @@ final secureStorageProvider = Provider<FlutterSecureStorage>((ref) {
 
 final tokenStoreProvider = Provider<TokenStore>((ref) {
   return SecureTokenStore(storage: ref.watch(secureStorageProvider));
+});
+
+final printerSettingsStoreProvider = Provider<PrinterSettingsStore>((ref) {
+  return SecurePrinterSettingsStore(storage: ref.watch(secureStorageProvider));
+});
+
+final printerServiceProvider = Provider<PrinterService>((ref) {
+  return PrinterService();
 });
 
 final sessionCoordinatorProvider = Provider<SessionCoordinator>((ref) {

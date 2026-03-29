@@ -28,24 +28,19 @@ class LoginFormState {
   }
 }
 
-final loginControllerProvider = NotifierProvider<LoginController, LoginFormState>(
-  LoginController.new,
-);
+final loginControllerProvider =
+    NotifierProvider<LoginController, LoginFormState>(LoginController.new);
 
 class LoginController extends Notifier<LoginFormState> {
   @override
   LoginFormState build() => const LoginFormState();
 
-  Future<bool> submit({
-    required String email,
-    required String password,
-  }) async {
+  Future<bool> submit({required String email, required String password}) async {
     state = state.copyWith(isSubmitting: true, clearErrors: true);
     try {
-      await ref.read(authRepositoryProvider).login(
-            email: email,
-            password: password,
-          );
+      await ref
+          .read(authRepositoryProvider)
+          .login(email: email, password: password);
       state = const LoginFormState();
       return true;
     } on ApiException catch (exception) {

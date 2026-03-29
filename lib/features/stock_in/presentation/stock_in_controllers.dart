@@ -11,8 +11,8 @@ import '../models/stock_in_models.dart';
 
 final stockInDraftControllerProvider =
     NotifierProvider<StockInDraftController, StockInDraftState>(
-  StockInDraftController.new,
-);
+      StockInDraftController.new,
+    );
 
 class StockInDraftController extends Notifier<StockInDraftState> {
   @override
@@ -54,7 +54,9 @@ class StockInDraftController extends Notifier<StockInDraftState> {
 
     state = state.copyWith(isSubmitting: true, clearError: true);
     try {
-      final result = await ref.read(stockInRepositoryProvider).createStockIn(
+      final result = await ref
+          .read(stockInRepositoryProvider)
+          .createStockIn(
             StockInPayload(
               variantId: state.selectedVariant!.variantId,
               qty: state.qty,
@@ -85,8 +87,8 @@ class StockInDraftController extends Notifier<StockInDraftState> {
 
 final stockInHistoryControllerProvider =
     AsyncNotifierProvider<StockInHistoryController, StockInHistoryState>(
-  StockInHistoryController.new,
-);
+      StockInHistoryController.new,
+    );
 
 class StockInHistoryController extends AsyncNotifier<StockInHistoryState> {
   @override
@@ -113,10 +115,9 @@ class StockInHistoryController extends AsyncNotifier<StockInHistoryState> {
 
     state = AsyncData(current.copyWith(isLoadingMore: true));
     final nextPage = current.meta.currentPage + 1;
-    final response = await ref.read(stockInRepositoryProvider).listStockIn(
-          date: current.selectedDate,
-          page: nextPage,
-        );
+    final response = await ref
+        .read(stockInRepositoryProvider)
+        .listStockIn(date: current.selectedDate, page: nextPage);
     state = AsyncData(
       current.copyWith(
         items: [...current.items, ...response.data],
@@ -127,9 +128,9 @@ class StockInHistoryController extends AsyncNotifier<StockInHistoryState> {
   }
 
   Future<StockInHistoryState> _loadPage({String? date}) async {
-    final response = await ref.read(stockInRepositoryProvider).listStockIn(
-          date: date,
-        );
+    final response = await ref
+        .read(stockInRepositoryProvider)
+        .listStockIn(date: date);
     return StockInHistoryState(
       items: response.data,
       meta: response.meta,

@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 
 class AppLoadingState extends StatelessWidget {
-  const AppLoadingState({
-    super.key,
-    required this.label,
-  });
+  const AppLoadingState({super.key, required this.label});
 
   final String label;
 

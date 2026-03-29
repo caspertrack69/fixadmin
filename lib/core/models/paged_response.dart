@@ -26,10 +26,7 @@ class PaginationMeta {
 }
 
 class PagedResponse<T> {
-  const PagedResponse({
-    required this.data,
-    required this.meta,
-  });
+  const PagedResponse({required this.data, required this.meta});
 
   final List<T> data;
   final PaginationMeta meta;

@@ -159,7 +159,8 @@ class _StatCard extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final compact = constraints.maxHeight <= 124;
+          final compact = constraints.maxHeight <= 132;
+          final ultraCompact = constraints.maxHeight <= 124;
 
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -168,13 +169,24 @@ class _StatCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   CircleAvatar(
-                    radius: compact ? 16 : 20,
+                    radius: ultraCompact
+                        ? 14
+                        : compact
+                        ? 16
+                        : 20,
                     backgroundColor: Theme.of(
                       context,
                     ).colorScheme.primaryContainer,
-                    child: Icon(icon, size: compact ? 16 : 20),
+                    child: Icon(
+                      icon,
+                      size: ultraCompact
+                          ? 14
+                          : compact
+                          ? 16
+                          : 20,
+                    ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: ultraCompact ? 10 : 12),
                   Expanded(
                     child: Text(
                       title,
@@ -185,32 +197,52 @@ class _StatCard extends StatelessWidget {
                   ),
                 ],
               ),
-              SizedBox(height: compact ? 8 : 14),
+              SizedBox(
+                height: ultraCompact
+                    ? 6
+                    : compact
+                    ? 8
+                    : 14,
+              ),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        value,
-                        style: Theme.of(context).textTheme.headlineSmall
-                            ?.copyWith(fontSize: compact ? 22 : 30),
+                child: ultraCompact
+                    ? Align(
+                        alignment: Alignment.bottomLeft,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            value,
+                            style: Theme.of(
+                              context,
+                            ).textTheme.headlineSmall?.copyWith(fontSize: 20),
+                          ),
+                        ),
+                      )
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              value,
+                              style: Theme.of(context).textTheme.headlineSmall
+                                  ?.copyWith(fontSize: compact ? 22 : 30),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            subtitle,
+                            maxLines: compact ? 1 : 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: compact
+                                ? Theme.of(context).textTheme.bodySmall
+                                : null,
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      maxLines: compact ? 1 : 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: compact
-                          ? Theme.of(context).textTheme.bodySmall
-                          : null,
-                    ),
-                  ],
-                ),
               ),
             ],
           );

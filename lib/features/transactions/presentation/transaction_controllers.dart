@@ -53,8 +53,8 @@ class TransactionDraftState {
 
 final transactionDraftControllerProvider =
     NotifierProvider<TransactionDraftController, TransactionDraftState>(
-  TransactionDraftController.new,
-);
+      TransactionDraftController.new,
+    );
 
 class TransactionDraftController extends Notifier<TransactionDraftState> {
   @override
@@ -62,7 +62,9 @@ class TransactionDraftController extends Notifier<TransactionDraftState> {
 
   void addVariant(SearchVariantResult variant) {
     final items = [...state.items];
-    final index = items.indexWhere((item) => item.variantId == variant.variantId);
+    final index = items.indexWhere(
+      (item) => item.variantId == variant.variantId,
+    );
     if (index == -1) {
       items.add(CartItemDraft.fromSearch(variant));
     } else {
@@ -134,7 +136,9 @@ class TransactionDraftController extends Notifier<TransactionDraftState> {
     state = state.copyWith(isSubmitting: true, clearErrors: true);
 
     try {
-      final result = await ref.read(transactionsRepositoryProvider).createTransaction(
+      final result = await ref
+          .read(transactionsRepositoryProvider)
+          .createTransaction(
             items: state.items
                 .map(
                   (item) => TransactionPayloadItem(
@@ -184,9 +188,10 @@ class TransactionDraftController extends Notifier<TransactionDraftState> {
 }
 
 final transactionHistoryControllerProvider =
-    AsyncNotifierProvider<TransactionHistoryController, TransactionHistoryState>(
-  TransactionHistoryController.new,
-);
+    AsyncNotifierProvider<
+      TransactionHistoryController,
+      TransactionHistoryState
+    >(TransactionHistoryController.new);
 
 class TransactionHistoryController
     extends AsyncNotifier<TransactionHistoryState> {
@@ -214,10 +219,9 @@ class TransactionHistoryController
 
     state = AsyncData(current.copyWith(isLoadingMore: true));
     final nextPage = current.meta.currentPage + 1;
-    final response = await ref.read(transactionsRepositoryProvider).listTransactions(
-          date: current.selectedDate,
-          page: nextPage,
-        );
+    final response = await ref
+        .read(transactionsRepositoryProvider)
+        .listTransactions(date: current.selectedDate, page: nextPage);
 
     state = AsyncData(
       current.copyWith(
@@ -229,9 +233,9 @@ class TransactionHistoryController
   }
 
   Future<TransactionHistoryState> _loadPage({String? date}) async {
-    final response = await ref.read(transactionsRepositoryProvider).listTransactions(
-          date: date,
-        );
+    final response = await ref
+        .read(transactionsRepositoryProvider)
+        .listTransactions(date: date);
     return TransactionHistoryState(
       items: response.data,
       meta: response.meta,
@@ -240,9 +244,10 @@ class TransactionHistoryController
   }
 }
 
-final transactionDetailProvider =
-    FutureProvider.family<TransactionDetail, int>((ref, transactionId) {
-  return ref.watch(transactionsRepositoryProvider).getTransactionDetail(
-        transactionId,
-      );
-});
+final transactionDetailProvider = FutureProvider.family<TransactionDetail, int>(
+  (ref, transactionId) {
+    return ref
+        .watch(transactionsRepositoryProvider)
+        .getTransactionDetail(transactionId);
+  },
+);

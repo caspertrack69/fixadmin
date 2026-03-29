@@ -71,7 +71,9 @@ class StockInScreen extends ConsumerWidget {
                       lastDate: DateTime.now().add(const Duration(days: 365)),
                     );
                     if (picked != null) {
-                      await controller.setDate(AppFormatters.apiDate.format(picked));
+                      await controller.setDate(
+                        AppFormatters.apiDate.format(picked),
+                      );
                     }
                   },
                   icon: const Icon(Icons.event_outlined),
@@ -126,7 +128,9 @@ class StockInScreen extends ConsumerWidget {
                   ),
                   if (data.hasMore)
                     OutlinedButton(
-                      onPressed: data.isLoadingMore ? null : controller.loadMore,
+                      onPressed: data.isLoadingMore
+                          ? null
+                          : controller.loadMore,
                       child: data.isLoadingMore
                           ? const CircularProgressIndicator()
                           : const Text('Muat lagi'),
@@ -167,7 +171,8 @@ class _CreateStockInSheet extends ConsumerStatefulWidget {
   const _CreateStockInSheet();
 
   @override
-  ConsumerState<_CreateStockInSheet> createState() => _CreateStockInSheetState();
+  ConsumerState<_CreateStockInSheet> createState() =>
+      _CreateStockInSheetState();
 }
 
 class _CreateStockInSheetState extends ConsumerState<_CreateStockInSheet> {
@@ -199,9 +204,9 @@ class _CreateStockInSheetState extends ConsumerState<_CreateStockInSheet> {
     ref.listen(stockInDraftControllerProvider, (previous, next) {
       if (previous?.errorMessage != next.errorMessage &&
           next.errorMessage != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(next.errorMessage!)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(next.errorMessage!)));
       }
     });
 

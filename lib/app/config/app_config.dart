@@ -8,12 +8,12 @@ final class AppConfig {
 
   static String get deviceName {
     return switch (defaultTargetPlatform) {
-      TargetPlatform.android => 'Fixadmin Android',
-      TargetPlatform.iOS => 'Fixadmin iPhone',
-      TargetPlatform.macOS => 'Fixadmin macOS',
-      TargetPlatform.windows => 'Fixadmin Windows',
-      TargetPlatform.linux => 'Fixadmin Linux',
-      TargetPlatform.fuchsia => 'Fixadmin Fuchsia',
+      TargetPlatform.android => 'Kasirfix Android',
+      TargetPlatform.iOS => 'Kasirfix iPhone',
+      TargetPlatform.macOS => 'Kasirfix macOS',
+      TargetPlatform.windows => 'Kasirfix Windows',
+      TargetPlatform.linux => 'Kasirfix Linux',
+      TargetPlatform.fuchsia => 'Kasirfix Fuchsia',
     };
   }
 

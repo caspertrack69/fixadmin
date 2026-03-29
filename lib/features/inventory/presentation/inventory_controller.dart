@@ -88,8 +88,8 @@ class InventoryState {
 
 final inventoryControllerProvider =
     AsyncNotifierProvider<InventoryController, InventoryState>(
-  InventoryController.new,
-);
+      InventoryController.new,
+    );
 
 class InventoryController extends AsyncNotifier<InventoryState> {
   @override
@@ -164,8 +164,9 @@ class InventoryController extends AsyncNotifier<InventoryState> {
       return;
     }
 
-    final source =
-        current.query.trim().isEmpty ? current.rawTree : current.filteredTree;
+    final source = current.query.trim().isEmpty
+        ? current.rawTree
+        : current.filteredTree;
     state = AsyncData(
       current.copyWith(
         openCategoryIds: _collectCategoryIds(source),

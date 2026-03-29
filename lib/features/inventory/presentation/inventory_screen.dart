@@ -129,7 +129,8 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
                   Text('$error'),
                   const SizedBox(height: 16),
                   ElevatedButton(
-                    onPressed: () => ref.invalidate(inventoryControllerProvider),
+                    onPressed: () =>
+                        ref.invalidate(inventoryControllerProvider),
                     child: const Text('Muat ulang'),
                   ),
                 ],
@@ -258,9 +259,7 @@ class _PartTile extends StatelessWidget {
           .map(
             (variant) => Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: _TreeGuide(
-                child: _VariantRow(variant: variant),
-              ),
+              child: _TreeGuide(child: _VariantRow(variant: variant)),
             ),
           )
           .toList(),
@@ -350,9 +349,7 @@ class _AccordionCard extends StatelessWidget {
 }
 
 class _TreeGuide extends StatelessWidget {
-  const _TreeGuide({
-    required this.child,
-  });
+  const _TreeGuide({required this.child});
 
   final Widget child;
 
@@ -363,25 +360,17 @@ class _TreeGuide extends StatelessWidget {
       child: DecoratedBox(
         decoration: BoxDecoration(
           border: Border(
-            left: BorderSide(
-              color: Colors.grey.shade300,
-              width: 1,
-            ),
+            left: BorderSide(color: Colors.grey.shade300, width: 1),
           ),
         ),
-        child: Padding(
-          padding: const EdgeInsets.only(left: 16),
-          child: child,
-        ),
+        child: Padding(padding: const EdgeInsets.only(left: 16), child: child),
       ),
     );
   }
 }
 
 class _VariantRow extends StatelessWidget {
-  const _VariantRow({
-    required this.variant,
-  });
+  const _VariantRow({required this.variant});
 
   final Variant variant;
 
@@ -390,8 +379,8 @@ class _VariantRow extends StatelessWidget {
     final statusColor = variant.currentStock > 0
         ? AppTheme.success
         : variant.minStock > 0
-            ? AppTheme.warning
-            : AppTheme.critical;
+        ? AppTheme.warning
+        : AppTheme.critical;
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -448,9 +437,9 @@ class _VariantRow extends StatelessWidget {
                   ? 'Tersedia ${variant.currentStock}'
                   : 'Kosong',
               style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: statusColor,
-                    fontWeight: FontWeight.w700,
-                  ),
+                color: statusColor,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
         ],

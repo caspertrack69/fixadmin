@@ -1,5 +1,6 @@
 import '../../../core/models/paged_response.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/network/api_paths.dart';
 import '../models/transaction_models.dart';
 
 abstract class TransactionsRepository {
@@ -26,9 +27,8 @@ abstract class TransactionsRepository {
 }
 
 class ApiTransactionsRepository implements TransactionsRepository {
-  ApiTransactionsRepository({
-    required ApiClient apiClient,
-  }) : _apiClient = apiClient;
+  ApiTransactionsRepository({required ApiClient apiClient})
+    : _apiClient = apiClient;
 
   final ApiClient _apiClient;
 
@@ -40,7 +40,7 @@ class ApiTransactionsRepository implements TransactionsRepository {
     int perPage = 20,
   }) {
     return _apiClient.getPagedList<SearchVariantResult>(
-      '/variants/search',
+      ApiPaths.variantsSearch,
       queryParameters: {
         'q': query,
         'in_stock': inStock == null ? null : (inStock ? 1 : 0),
@@ -58,12 +58,9 @@ class ApiTransactionsRepository implements TransactionsRepository {
     int perPage = 20,
   }) {
     return _apiClient.getPagedList<TransactionHistoryItem>(
-      '/transactions',
-      queryParameters: {
-        'date': date,
-        'page': page,
-        'per_page': perPage,
-      }..removeWhere((key, value) => value == null),
+      ApiPaths.transactions,
+      queryParameters: {'date': date, 'page': page, 'per_page': perPage}
+        ..removeWhere((key, value) => value == null),
       parser: TransactionHistoryItem.fromJson,
     );
   }
@@ -75,7 +72,7 @@ class ApiTransactionsRepository implements TransactionsRepository {
     String? note,
   }) {
     return _apiClient.postObject<TransactionDetail>(
-      '/transactions',
+      ApiPaths.transactions,
       body: {
         'items': items.map((item) => item.toJson()).toList(),
         'paid_amount': paidAmount,
@@ -88,7 +85,7 @@ class ApiTransactionsRepository implements TransactionsRepository {
   @override
   Future<TransactionDetail> getTransactionDetail(int transactionId) {
     return _apiClient.getObject<TransactionDetail>(
-      '/transactions/$transactionId',
+      ApiPaths.transactionDetail(transactionId),
       parser: TransactionDetail.fromJson,
     );
   }

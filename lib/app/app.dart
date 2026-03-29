@@ -8,14 +8,14 @@ import '../features/auth/presentation/session_controller.dart';
 import 'shell/app_shell.dart';
 import 'theme/app_theme.dart';
 
-class FixAdminApp extends ConsumerStatefulWidget {
-  const FixAdminApp({super.key});
+class KasirfixApp extends ConsumerStatefulWidget {
+  const KasirfixApp({super.key});
 
   @override
-  ConsumerState<FixAdminApp> createState() => _FixAdminAppState();
+  ConsumerState<KasirfixApp> createState() => _KasirfixAppState();
 }
 
-class _FixAdminAppState extends ConsumerState<FixAdminApp>
+class _KasirfixAppState extends ConsumerState<KasirfixApp>
     with WidgetsBindingObserver {
   @override
   void initState() {
@@ -41,7 +41,7 @@ class _FixAdminAppState extends ConsumerState<FixAdminApp>
     final session = ref.watch(sessionControllerProvider);
 
     return MaterialApp(
-      title: 'Fixadmin Kasir',
+      title: 'Kasirfix',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
       home: switch (session) {

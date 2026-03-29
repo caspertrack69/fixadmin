@@ -1,12 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:fixadmin/core/network/api_exception.dart';
-import 'package:fixadmin/core/providers/app_providers.dart';
-import 'package:fixadmin/core/storage/token_store.dart';
-import 'package:fixadmin/features/auth/data/auth_repository.dart';
-import 'package:fixadmin/features/auth/models/auth_session.dart';
-import 'package:fixadmin/features/auth/models/session_user.dart';
-import 'package:fixadmin/features/auth/presentation/session_controller.dart';
+import 'package:kasirfix/core/network/api_exception.dart';
+import 'package:kasirfix/core/providers/app_providers.dart';
+import 'package:kasirfix/core/storage/token_store.dart';
+import 'package:kasirfix/features/auth/data/auth_repository.dart';
+import 'package:kasirfix/features/auth/models/auth_session.dart';
+import 'package:kasirfix/features/auth/models/session_user.dart';
+import 'package:kasirfix/features/auth/presentation/session_controller.dart';
 
 void main() {
   test('clears session when me endpoint returns unauthorized', () async {
@@ -49,10 +49,7 @@ class _MemoryTokenStore implements TokenStore {
 
 class _UnauthorizedAuthRepository implements AuthRepository {
   @override
-  Future<AuthSession> login({
-    required String email,
-    required String password,
-  }) {
+  Future<AuthSession> login({required String email, required String password}) {
     throw UnimplementedError();
   }
 

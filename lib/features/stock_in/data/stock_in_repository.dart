@@ -1,5 +1,6 @@
 import '../../../core/models/paged_response.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/network/api_paths.dart';
 import '../models/stock_in_models.dart';
 
 abstract class StockInRepository {
@@ -13,9 +14,7 @@ abstract class StockInRepository {
 }
 
 class ApiStockInRepository implements StockInRepository {
-  ApiStockInRepository({
-    required ApiClient apiClient,
-  }) : _apiClient = apiClient;
+  ApiStockInRepository({required ApiClient apiClient}) : _apiClient = apiClient;
 
   final ApiClient _apiClient;
 
@@ -26,12 +25,9 @@ class ApiStockInRepository implements StockInRepository {
     int perPage = 20,
   }) {
     return _apiClient.getPagedList<StockInLog>(
-      '/stock/in',
-      queryParameters: {
-        'date': date,
-        'page': page,
-        'per_page': perPage,
-      }..removeWhere((key, value) => value == null),
+      ApiPaths.stockIn,
+      queryParameters: {'date': date, 'page': page, 'per_page': perPage}
+        ..removeWhere((key, value) => value == null),
       parser: StockInLog.fromJson,
     );
   }
@@ -39,7 +35,7 @@ class ApiStockInRepository implements StockInRepository {
   @override
   Future<StockInLog> createStockIn(StockInPayload payload) {
     return _apiClient.postObject<StockInLog>(
-      '/stock/in',
+      ApiPaths.stockIn,
       body: payload.toJson(),
       parser: StockInLog.fromJson,
     );

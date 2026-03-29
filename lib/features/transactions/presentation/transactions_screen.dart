@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/theme/app_theme.dart';
 import '../../../core/formatters/app_formatters.dart';
+import '../../../core/providers/app_providers.dart';
 import '../../../core/widgets/app_section_card.dart';
 import '../../../core/widgets/variant_picker_sheet.dart';
 import '../models/transaction_models.dart';
@@ -1353,15 +1354,18 @@ class _HistoryTab extends ConsumerWidget {
   }
 }
 
-class TransactionReceiptScreen extends StatelessWidget {
+class TransactionReceiptScreen extends ConsumerWidget {
   const TransactionReceiptScreen({super.key, required this.detail});
 
   final TransactionDetail detail;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Struk Transaksi')),
+      appBar: AppBar(
+        title: const Text('Struk Transaksi'),
+        actions: [_ReceiptPrintButton(detail: detail, autoTrigger: true)],
+      ),
       body: _ReceiptBody(detail: detail),
     );
   }
@@ -1375,8 +1379,15 @@ class TransactionDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final detail = ref.watch(transactionDetailProvider(transactionId));
+    final currentDetail = detail.asData?.value;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Detail Transaksi')),
+      appBar: AppBar(
+        title: const Text('Detail Transaksi'),
+        actions: currentDetail == null
+            ? null
+            : [_ReceiptPrintButton(detail: currentDetail)],
+      ),
       body: detail.when(
         data: (value) => _ReceiptBody(detail: value),
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -1572,5 +1583,98 @@ class _SummaryRow extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class _ReceiptPrintButton extends ConsumerStatefulWidget {
+  const _ReceiptPrintButton({required this.detail, this.autoTrigger = false});
+
+  final TransactionDetail detail;
+  final bool autoTrigger;
+
+  @override
+  ConsumerState<_ReceiptPrintButton> createState() =>
+      _ReceiptPrintButtonState();
+}
+
+class _ReceiptPrintButtonState extends ConsumerState<_ReceiptPrintButton> {
+  bool _isPrinting = false;
+  bool _didAutoTrigger = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (widget.autoTrigger && !_didAutoTrigger) {
+        _didAutoTrigger = true;
+        _print(autoMode: true);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      tooltip: 'Cetak',
+      onPressed: _isPrinting ? null : () => _print(),
+      icon: _isPrinting
+          ? const SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : const Icon(Icons.print_outlined),
+    );
+  }
+
+  Future<void> _print({bool autoMode = false}) async {
+    if (_isPrinting) {
+      return;
+    }
+
+    setState(() {
+      _isPrinting = true;
+    });
+
+    try {
+      final settings = await ref.read(printerSettingsStoreProvider).read();
+      if (autoMode && !settings.autoPrintAfterCheckout) {
+        return;
+      }
+      if (settings.selectedPrinter == null) {
+        if (!autoMode && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Atur printer dulu di menu Printer & Struk.'),
+            ),
+          );
+        }
+        return;
+      }
+
+      await ref
+          .read(printerServiceProvider)
+          .printReceipt(detail: widget.detail, settings: settings);
+
+      if (!mounted || autoMode) {
+        return;
+      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Struk sedang dicetak.')));
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('$error')));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isPrinting = false;
+        });
+      }
+    }
   }
 }

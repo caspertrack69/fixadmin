@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:fixadmin/core/providers/app_providers.dart';
-import 'package:fixadmin/features/inventory/data/inventory_repository.dart';
-import 'package:fixadmin/features/inventory/models/inventory_models.dart';
-import 'package:fixadmin/features/inventory/presentation/inventory_screen.dart';
+import 'package:kasirfix/core/providers/app_providers.dart';
+import 'package:kasirfix/features/inventory/data/inventory_repository.dart';
+import 'package:kasirfix/features/inventory/models/inventory_models.dart';
+import 'package:kasirfix/features/inventory/presentation/inventory_screen.dart';
 
 void main() {
   testWidgets('renders inventory search result and formatted price', (

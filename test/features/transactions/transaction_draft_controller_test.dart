@@ -2,11 +2,11 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:fixadmin/core/models/paged_response.dart';
-import 'package:fixadmin/core/providers/app_providers.dart';
-import 'package:fixadmin/features/transactions/data/transactions_repository.dart';
-import 'package:fixadmin/features/transactions/models/transaction_models.dart';
-import 'package:fixadmin/features/transactions/presentation/transaction_controllers.dart';
+import 'package:kasirfix/core/models/paged_response.dart';
+import 'package:kasirfix/core/providers/app_providers.dart';
+import 'package:kasirfix/features/transactions/data/transactions_repository.dart';
+import 'package:kasirfix/features/transactions/models/transaction_models.dart';
+import 'package:kasirfix/features/transactions/presentation/transaction_controllers.dart';
 
 void main() {
   test('submit exposes loading state and clears draft on success', () async {
@@ -20,7 +20,9 @@ void main() {
     );
     addTearDown(container.dispose);
 
-    final notifier = container.read(transactionDraftControllerProvider.notifier);
+    final notifier = container.read(
+      transactionDraftControllerProvider.notifier,
+    );
     notifier.addVariant(
       const SearchVariantResult(
         variantId: 31,
@@ -98,12 +100,7 @@ class _FakeTransactionsRepository implements TransactionsRepository {
   }) async {
     return const PagedResponse(
       data: [],
-      meta: PaginationMeta(
-        currentPage: 1,
-        lastPage: 1,
-        perPage: 20,
-        total: 0,
-      ),
+      meta: PaginationMeta(currentPage: 1, lastPage: 1, perPage: 20, total: 0),
     );
   }
 
@@ -116,12 +113,7 @@ class _FakeTransactionsRepository implements TransactionsRepository {
   }) async {
     return const PagedResponse(
       data: [],
-      meta: PaginationMeta(
-        currentPage: 1,
-        lastPage: 1,
-        perPage: 20,
-        total: 0,
-      ),
+      meta: PaginationMeta(currentPage: 1, lastPage: 1, perPage: 20, total: 0),
     );
   }
 }

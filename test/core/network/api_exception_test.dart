@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:fixadmin/core/network/api_exception.dart';
+import 'package:kasirfix/core/network/api_exception.dart';
 
 void main() {
   test('maps 422 response into validation error with field messages', () {

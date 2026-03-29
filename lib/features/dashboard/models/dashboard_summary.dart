@@ -53,9 +53,7 @@ class TodaySummary {
 }
 
 class DashboardPermissions {
-  const DashboardPermissions({
-    required this.canInputStock,
-  });
+  const DashboardPermissions({required this.canInputStock});
 
   final bool canInputStock;
 

@@ -8,13 +8,15 @@ import '../models/auth_session.dart';
 
 final sessionControllerProvider =
     AsyncNotifierProvider<SessionController, AuthSession?>(
-  SessionController.new,
-);
+      SessionController.new,
+    );
 
 class SessionController extends AsyncNotifier<AuthSession?> {
   @override
   FutureOr<AuthSession?> build() async {
-    ref.read(sessionCoordinatorProvider).register(
+    ref
+        .read(sessionCoordinatorProvider)
+        .register(
           onUnauthorized: _handleUnauthorized,
           onSessionChanged: _handleSessionChanged,
         );

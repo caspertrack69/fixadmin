@@ -1,4 +1,5 @@
 import '../../../core/models/paged_response.dart';
+import '../../../core/utils/json_parsers.dart';
 import '../../transactions/models/transaction_models.dart';
 
 class StockInLog {
@@ -24,16 +25,14 @@ class StockInLog {
 
   factory StockInLog.fromJson(Map<String, dynamic> json) {
     return StockInLog(
-      logId: (json['log_id'] as num?)?.toInt() ?? 0,
-      variant: json['variant'] as String? ?? '-',
-      qty: (json['qty'] as num?)?.toInt() ?? 0,
-      buyPrice: (json['buy_price'] as num?)?.toInt() ?? 0,
-      stockAfter: (json['stock_after'] as num?)?.toInt() ?? 0,
-      note: json['note'] as String?,
-      createdBy: json['created_by'] as String? ?? '-',
-      createdAt: json['created_at'] == null
-          ? null
-          : DateTime.tryParse('${json['created_at']}'),
+      logId: parseInt(json['log_id']),
+      variant: parseString(json['variant']),
+      qty: parseInt(json['qty']),
+      buyPrice: parseInt(json['buy_price']),
+      stockAfter: parseInt(json['stock_after']),
+      note: json['note'] == null ? null : parseString(json['note']),
+      createdBy: parseString(json['created_by']),
+      createdAt: parseDateTime(json['created_at']),
     );
   }
 }

@@ -1,4 +1,5 @@
 import '../../../core/models/paged_response.dart';
+import '../../../core/utils/json_parsers.dart';
 
 class SearchVariantResult {
   const SearchVariantResult({
@@ -25,15 +26,15 @@ class SearchVariantResult {
 
   factory SearchVariantResult.fromJson(Map<String, dynamic> json) {
     return SearchVariantResult(
-      variantId: (json['variant_id'] as num?)?.toInt() ?? 0,
-      displayName: json['display_name'] as String? ?? '-',
-      category: json['category'] as String? ?? '-',
-      model: json['model'] as String? ?? '-',
-      part: json['part'] as String? ?? '-',
-      grade: json['grade'] as String? ?? '-',
-      sellPrice: (json['sell_price'] as num?)?.toInt() ?? 0,
-      currentStock: (json['current_stock'] as num?)?.toInt() ?? 0,
-      photoUrl: json['photo_url'] as String?,
+      variantId: parseInt(json['variant_id']),
+      displayName: parseString(json['display_name']),
+      category: parseString(json['category']),
+      model: parseString(json['model']),
+      part: parseString(json['part']),
+      grade: parseString(json['grade']),
+      sellPrice: parseInt(json['sell_price']),
+      currentStock: parseInt(json['current_stock']),
+      photoUrl: json['photo_url'] == null ? null : parseString(json['photo_url']),
     );
   }
 }
@@ -55,13 +56,11 @@ class TransactionHistoryItem {
 
   factory TransactionHistoryItem.fromJson(Map<String, dynamic> json) {
     return TransactionHistoryItem(
-      transactionId: (json['transaction_id'] as num?)?.toInt() ?? 0,
-      transactionCode: json['transaction_code'] as String? ?? '-',
-      totalAmount: (json['total_amount'] as num?)?.toInt() ?? 0,
-      itemCount: (json['item_count'] as num?)?.toInt() ?? 0,
-      createdAt: json['created_at'] == null
-          ? null
-          : DateTime.tryParse('${json['created_at']}'),
+      transactionId: parseInt(json['transaction_id']),
+      transactionCode: parseString(json['transaction_code']),
+      totalAmount: parseInt(json['total_amount']),
+      itemCount: parseInt(json['item_count']),
+      createdAt: parseDateTime(json['created_at']),
     );
   }
 }
@@ -81,10 +80,10 @@ class TransactionLineItem {
 
   factory TransactionLineItem.fromJson(Map<String, dynamic> json) {
     return TransactionLineItem(
-      displayName: json['display_name'] as String? ?? '-',
-      qty: (json['qty'] as num?)?.toInt() ?? 0,
-      sellPrice: (json['sell_price'] as num?)?.toInt() ?? 0,
-      subtotal: (json['subtotal'] as num?)?.toInt() ?? 0,
+      displayName: parseString(json['display_name']),
+      qty: parseInt(json['qty']),
+      sellPrice: parseInt(json['sell_price']),
+      subtotal: parseInt(json['subtotal']),
     );
   }
 }
@@ -115,9 +114,9 @@ class TransactionDetail {
   factory TransactionDetail.fromJson(Map<String, dynamic> json) {
     final rawItems = json['items'] as List? ?? const [];
     return TransactionDetail(
-      transactionId: (json['transaction_id'] as num?)?.toInt() ?? 0,
-      transactionCode: json['transaction_code'] as String? ?? '-',
-      kasir: json['kasir'] as String? ?? '-',
+      transactionId: parseInt(json['transaction_id']),
+      transactionCode: parseString(json['transaction_code']),
+      kasir: parseString(json['kasir']),
       items: rawItems
           .whereType<Map>()
           .map(
@@ -126,13 +125,11 @@ class TransactionDetail {
             ),
           )
           .toList(),
-      totalAmount: (json['total_amount'] as num?)?.toInt() ?? 0,
-      paidAmount: (json['paid_amount'] as num?)?.toInt() ?? 0,
-      changeAmount: (json['change_amount'] as num?)?.toInt() ?? 0,
-      note: json['note'] as String?,
-      createdAt: json['created_at'] == null
-          ? null
-          : DateTime.tryParse('${json['created_at']}'),
+      totalAmount: parseInt(json['total_amount']),
+      paidAmount: parseInt(json['paid_amount']),
+      changeAmount: parseInt(json['change_amount']),
+      note: json['note'] == null ? null : parseString(json['note']),
+      createdAt: parseDateTime(json['created_at']),
     );
   }
 }

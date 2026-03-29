@@ -1,3 +1,5 @@
+import '../../../core/utils/json_parsers.dart';
+
 class Category {
   const Category({
     required this.id,
@@ -12,8 +14,8 @@ class Category {
   factory Category.fromJson(Map<String, dynamic> json) {
     final rawModels = json['models'] as List? ?? const [];
     return Category(
-      id: (json['id'] as num?)?.toInt() ?? 0,
-      name: json['name'] as String? ?? '-',
+      id: parseInt(json['id']),
+      name: parseString(json['name']),
       models: rawModels
           .whereType<Map>()
           .map(
@@ -50,8 +52,8 @@ class DeviceModel {
   factory DeviceModel.fromJson(Map<String, dynamic> json) {
     final rawParts = json['parts'] as List? ?? const [];
     return DeviceModel(
-      id: (json['id'] as num?)?.toInt() ?? 0,
-      name: json['name'] as String? ?? '-',
+      id: parseInt(json['id']),
+      name: parseString(json['name']),
       parts: rawParts
           .whereType<Map>()
           .map(
@@ -88,8 +90,8 @@ class Part {
   factory Part.fromJson(Map<String, dynamic> json) {
     final rawVariants = json['variants'] as List? ?? const [];
     return Part(
-      id: (json['id'] as num?)?.toInt() ?? 0,
-      name: json['name'] as String? ?? '-',
+      id: parseInt(json['id']),
+      name: parseString(json['name']),
       variants: rawVariants
           .whereType<Map>()
           .map(
@@ -133,12 +135,12 @@ class Variant {
 
   factory Variant.fromJson(Map<String, dynamic> json) {
     return Variant(
-      id: (json['id'] as num?)?.toInt() ?? 0,
-      name: json['name'] as String? ?? '-',
-      sellPrice: (json['sell_price'] as num?)?.toInt() ?? 0,
-      currentStock: (json['current_stock'] as num?)?.toInt() ?? 0,
-      minStock: (json['min_stock'] as num?)?.toInt() ?? 0,
-      photoUrl: json['photo_url'] as String?,
+      id: parseInt(json['id']),
+      name: parseString(json['name']),
+      sellPrice: parseInt(json['sell_price']),
+      currentStock: parseInt(json['current_stock']),
+      minStock: parseInt(json['min_stock']),
+      photoUrl: json['photo_url'] == null ? null : parseString(json['photo_url']),
     );
   }
 }

@@ -108,6 +108,14 @@ class TransactionDraftController extends Notifier<TransactionDraftState> {
     state = state.copyWith(note: value);
   }
 
+  void setPaidAmountValue(int value) {
+    state = state.copyWith(paidAmount: value < 0 ? 0 : value);
+  }
+
+  void clearDraft() {
+    state = const TransactionDraftState();
+  }
+
   Future<TransactionDetail?> submit() async {
     if (state.items.isEmpty) {
       state = state.copyWith(

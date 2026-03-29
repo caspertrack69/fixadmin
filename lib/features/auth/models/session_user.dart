@@ -1,3 +1,5 @@
+import '../../../core/utils/json_parsers.dart';
+
 class SessionUser {
   const SessionUser({
     required this.id,
@@ -17,14 +19,12 @@ class SessionUser {
 
   factory SessionUser.fromJson(Map<String, dynamic> json) {
     return SessionUser(
-      id: (json['id'] as num?)?.toInt() ?? 0,
-      name: json['name'] as String? ?? '-',
-      email: json['email'] as String? ?? '-',
-      role: json['role'] as String? ?? 'kasir',
-      canInputStock: json['can_input_stock'] as bool? ?? false,
-      lastLogin: json['last_login'] == null
-          ? null
-          : DateTime.tryParse('${json['last_login']}'),
+      id: parseInt(json['id']),
+      name: parseString(json['name']),
+      email: parseString(json['email']),
+      role: parseString(json['role'], fallback: 'kasir'),
+      canInputStock: parseBool(json['can_input_stock']),
+      lastLogin: parseDateTime(json['last_login']),
     );
   }
 }

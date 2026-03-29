@@ -1,3 +1,5 @@
+import '../utils/json_parsers.dart';
+
 class PaginationMeta {
   const PaginationMeta({
     required this.currentPage,
@@ -15,10 +17,10 @@ class PaginationMeta {
 
   factory PaginationMeta.fromJson(Map<String, dynamic> json) {
     return PaginationMeta(
-      currentPage: (json['current_page'] as num?)?.toInt() ?? 1,
-      lastPage: (json['last_page'] as num?)?.toInt() ?? 1,
-      perPage: (json['per_page'] as num?)?.toInt() ?? 20,
-      total: (json['total'] as num?)?.toInt() ?? 0,
+      currentPage: parseInt(json['current_page'], fallback: 1),
+      lastPage: parseInt(json['last_page'], fallback: 1),
+      perPage: parseInt(json['per_page'], fallback: 20),
+      total: parseInt(json['total']),
     );
   }
 }

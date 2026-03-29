@@ -17,7 +17,16 @@ class DashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final dashboard = ref.watch(dashboardProvider);
     final width = MediaQuery.sizeOf(context).width;
-    final columns = width >= 900 ? 3 : 2;
+    final columns = width >= 980
+        ? 3
+        : width >= 680
+        ? 2
+        : 1;
+    final statCardHeight = width >= 980
+        ? 176.0
+        : width >= 680
+        ? 168.0
+        : 156.0;
 
     return RefreshIndicator(
       onRefresh: () async => ref.invalidate(dashboardProvider),
@@ -28,13 +37,15 @@ class DashboardScreen extends ConsumerWidget {
             data: (data) => Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                GridView.count(
-                  crossAxisCount: columns,
+                GridView(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  mainAxisSpacing: 12,
-                  crossAxisSpacing: 12,
-                  childAspectRatio: width >= 900 ? 1.6 : 1.2,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: columns,
+                    mainAxisSpacing: 12,
+                    crossAxisSpacing: 12,
+                    mainAxisExtent: statCardHeight,
+                  ),
                   children: [
                     _StatCard(
                       title: 'Transaksi Hari Ini',
@@ -50,7 +61,9 @@ class DashboardScreen extends ConsumerWidget {
                     ),
                     _StatCard(
                       title: 'Izin Stok',
-                      value: data.permissions.canInputStock ? 'Aktif' : 'Nonaktif',
+                      value: data.permissions.canInputStock
+                          ? 'Aktif'
+                          : 'Nonaktif',
                       subtitle: data.permissions.canInputStock
                           ? 'Kasir dapat input stok'
                           : 'Menu stok masuk disembunyikan',
@@ -143,32 +156,72 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppSectionCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          CircleAvatar(
-            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-            child: Icon(icon),
-          ),
-          const Spacer(),
-          Text(title, style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.headlineSmall,
-          ),
-          const SizedBox(height: 6),
-          Text(subtitle),
-        ],
+      padding: const EdgeInsets.all(14),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final compact = constraints.maxHeight <= 124;
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  CircleAvatar(
+                    radius: compact ? 16 : 20,
+                    backgroundColor: Theme.of(
+                      context,
+                    ).colorScheme.primaryContainer,
+                    child: Icon(icon, size: compact ? 16 : 20),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      title,
+                      maxLines: compact ? 1 : 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: compact ? 8 : 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        value,
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(fontSize: compact ? 22 : 30),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      maxLines: compact ? 1 : 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: compact
+                          ? Theme.of(context).textTheme.bodySmall
+                          : null,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 }
 
 class _EmptyList extends StatelessWidget {
-  const _EmptyList({
-    required this.label,
-  });
+  const _EmptyList({required this.label});
 
   final String label;
 

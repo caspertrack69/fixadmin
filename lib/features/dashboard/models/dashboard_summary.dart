@@ -1,3 +1,5 @@
+import '../../../core/utils/json_parsers.dart';
+
 class DashboardSummary {
   const DashboardSummary({
     required this.today,
@@ -43,9 +45,9 @@ class TodaySummary {
 
   factory TodaySummary.fromJson(Map<String, dynamic> json) {
     return TodaySummary(
-      date: json['date'] as String? ?? '-',
-      totalTransactions: (json['total_transactions'] as num?)?.toInt() ?? 0,
-      totalRevenue: (json['total_revenue'] as num?)?.toInt() ?? 0,
+      date: parseString(json['date']),
+      totalTransactions: parseInt(json['total_transactions']),
+      totalRevenue: parseInt(json['total_revenue']),
     );
   }
 }
@@ -59,7 +61,7 @@ class DashboardPermissions {
 
   factory DashboardPermissions.fromJson(Map<String, dynamic> json) {
     return DashboardPermissions(
-      canInputStock: json['can_input_stock'] as bool? ?? false,
+      canInputStock: parseBool(json['can_input_stock']),
     );
   }
 }
@@ -79,10 +81,10 @@ class LowStockAlert {
 
   factory LowStockAlert.fromJson(Map<String, dynamic> json) {
     return LowStockAlert(
-      variantId: (json['variant_id'] as num?)?.toInt() ?? 0,
-      displayName: json['display_name'] as String? ?? '-',
-      currentStock: (json['current_stock'] as num?)?.toInt() ?? 0,
-      minStock: (json['min_stock'] as num?)?.toInt() ?? 0,
+      variantId: parseInt(json['variant_id']),
+      displayName: parseString(json['display_name']),
+      currentStock: parseInt(json['current_stock']),
+      minStock: parseInt(json['min_stock']),
     );
   }
 }
